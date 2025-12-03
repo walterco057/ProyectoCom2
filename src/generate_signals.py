@@ -41,8 +41,9 @@ def awgn(signal: np.ndarray, snr_db: float) -> np.ndarray:
 
 def modulate_ask(bits: np.ndarray, M: int) -> np.ndarray:
     """
-    Modulador M-ASK en banda base (solo parte real != 0).
-    Niveles simétricos alrededor de 0: [-3, -1, 1, 3] para M=4, etc.
+    Modulador M-ASK en banda base.
+    Para M=2 usamos ASK unipolar (tipo OOK) -> niveles {0, A}
+    Para M>2 usamos ASK simétrica alrededor de 0.
     """
     bits = np.asarray(bits)
     k = int(np.log2(M))
@@ -50,10 +51,14 @@ def modulate_ask(bits: np.ndarray, M: int) -> np.ndarray:
 
     ints = bits_to_ints(bits, k)  # 0..M-1
 
-    # Niveles: -(M-1), ..., -1, 1, ..., (M-1) (evitamos 0)
-    levels = np.arange(-(M - 1), M, 2)
-    s = levels[ints].astype(np.complex64)
+    if M == 2:
+        # 2-ASK unipolar: {0, 2} y luego normalizamos potencia promedio = 1
+        levels = np.array([0.0, 2.0], dtype=np.float32)
+    else:
+        # M-ASK simétrica para M>2, como antes (p.ej. [-3, -1, 1, 3] para M=4)
+        levels = np.arange(-(M - 1), M, 2)
 
+    s = levels[ints].astype(np.complex64)
     # Normalizar potencia promedio a 1
     s = s / np.sqrt(np.mean(np.abs(s) ** 2))
     return s
